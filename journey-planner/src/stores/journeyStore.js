@@ -1,15 +1,19 @@
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 
 export const useJourneyStore = defineStore("journeyStore", () => {
     const journey = ref([
         {
-            "step":"start",
+            "step": "start",
             "location": null,
+            "countryCode": "",
+            "coord": [],
         },
         {
-            "step":"end",
+            "step": "end",
             "location": null,
+            "countryCode": "",
+            "coord": [],
         },
     ]);
 
@@ -24,18 +28,43 @@ export const useJourneyStore = defineStore("journeyStore", () => {
     const clearJourney = () => {
         journey.value = [
             {
-                "step":"start",
+                "step": "start",
                 "location": null,
+                "countryCode": "",
+                "coord": [],
             },
             {
-                "step":"end",
+                "step": "end",
                 "location": null,
+                "countryCode": "",
+                "coord": [],
             },
         ];
     }
 
+    const start = computed(() => {
+        let res = null;
+        journey.value.forEach(step => {
+            if (step.step === "start") {
+                res = step;
+            };
+        });
+        return res;
+    });
+    const end = computed(() => {
+        let res = null;
+        journey.value.forEach(step => {
+            if (step.step === "end") {
+                res = step;
+            };
+        })
+        return res;
+    });
+
     return {
         journey,
+        start,
+        end,
         addStep,
         removeStep,
         clearJourney,

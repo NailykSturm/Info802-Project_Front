@@ -5,7 +5,9 @@ import JourneyForm from './components/JourneyForm.vue'
 
 <template>
   <main>
-    <Map />
-    <JourneyForm />
+    <n-message-provider>
+      <Map />
+      <JourneyForm />
+    </n-message-provider>
   </main>
 </template>
