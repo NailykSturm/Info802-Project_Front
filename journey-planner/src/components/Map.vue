@@ -23,6 +23,24 @@ export default defineComponent({
         var lineGeoJSON = [{
             "type": "LineString",
             "coordinates": [[b8c[1], b8c[0]], [home[1], home[0]]],
+        },{
+            "type": "LineString",
+            "coordinates": [[-180, 0], [180, 0]],
+        }, {
+            "type": "LineString",
+            "coordinates": [[0, -90], [0, 90]],
+        }, {
+            "type": "LineString",
+            "coordinates": [[-180, 90], [180, 90]],
+        }, {
+            "type": "LineString",
+            "coordinates": [[180, -90], [-180, -90]],
+        }, {
+            "type": "LineString",
+            "coordinates": [[180, 90], [180, -90]],
+        }, {
+            "type": "LineString",
+            "coordinates": [[-180, 90], [-180, -90]],
         }];
         const x = ref(0);
         const y = ref(0);
@@ -55,7 +73,26 @@ export default defineComponent({
             L.geoJSON(this.lineGeoJSON, { style: { "color": "#A512B7" } }).addTo(this.mapDiv);
             this.b8cMarker = L.marker(this.b8c).addTo(this.mapDiv);
             this.homeMarker = L.marker(this.home).addTo(this.mapDiv);
+
             this.mapDiv.on('click', this.onMapClick);
+            this.mapDiv.on('zoomstart', () => {
+                if(this.markers.length > 0){
+                    this.markers.forEach((marker) => {
+                        this.mapDiv.removeLayer(marker);
+                    });
+                }
+            });
+            this.mapDiv.on('zoomend', () => {
+                this.markers = [];
+                for (let step of this.journey.journey.value) {
+                    if (step.coord.length > 0) {
+                        this.markers.push(L.marker(step.coord).addTo(this.mapDiv));
+                    }
+                }
+            });
+            this.mapDiv.on('moveend', () => {
+                console.log(this.mapDiv.getCenter());
+            });
 
             watch(this.journey.journey, (newJourney) => {
                 console.log("Journey changed");
@@ -86,8 +123,6 @@ export default defineComponent({
                 this.showPopover = false;
             }, 3000);
         }, switchDestination: function () {
-            console.log("Switching destination");
-            console.log(`before switch: ${this.useLocation}`)
             if(this.markers.length == 0){
                 if (this.useLocation === this.b8c) {
                     this.useLocation = this.home;
@@ -106,8 +141,7 @@ export default defineComponent({
                     this.useLocation = this.b8c;
                 }
             }
-            console.log(`after switch: ${this.useLocation}`)
-            this.mapDiv.setView(this.useLocation, 12);
+            this.mapDiv.setView(this.useLocation, 10);
         }, findTravel: function () {
             axios.post(`https://api.openrouteservice.org/v2/directions/driving-car/geojson`, {
                 "coordinates": [[this.b8c[1], this.b8c[0]], [this.home[1], this.home[0]]],
