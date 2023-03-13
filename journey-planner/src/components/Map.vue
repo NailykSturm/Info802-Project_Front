@@ -88,12 +88,6 @@ export default defineComponent({
     mounted() {
         this.setupLeafletMap();
     },
-    components() {
-        return {
-            NButton,
-            NPopover,
-        }
-    }
 });
 </script>
 
