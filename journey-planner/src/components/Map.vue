@@ -90,9 +90,6 @@ export default defineComponent({
                     }
                 }
             });
-            this.mapDiv.on('moveend', () => {
-                console.log(this.mapDiv.getCenter());
-            });
 
             watch(this.journey.journey, (newJourney) => {
                 console.log("Journey changed");
