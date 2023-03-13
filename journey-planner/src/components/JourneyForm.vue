@@ -31,7 +31,7 @@ export default defineComponent({
         const CCL = ref([]);
         axios.get('https://restcountries.com/v3.1/all')
             .then((data) => {
-                for( let country of data.data) {
+                for (let country of data.data) {
                     CCL.value.push(country)
                     countryCodeList.value.push({
                         'label': country.name.common + ' (' + country.cca2 + ')',
@@ -41,6 +41,12 @@ export default defineComponent({
             }).catch((err) => {
                 console.log(err);
             });
+
+        function handleSelectCountryCode(value) {
+            CCL.value.find((country) => {
+                country.cca2 === value ? journey.journey.value.find((step) => { step.countryCode === value ? step.coord = country.latlng : null; }) : null;
+            });
+        }
         return {
             journeyStore,
             journey,
@@ -48,6 +54,7 @@ export default defineComponent({
             CCL,
             addStep,
             search,
+            handleSelectCountryCode,
         };
     }
 });
@@ -60,12 +67,14 @@ export default defineComponent({
     end : {{ journey.end }}<br>
     <!-- <n-space> -->
     <!-- <n-space> -->
-    <n-input v-model:value="journey.journey.value[0].location" type="text" placeholder="Ville de départ" />
-    <n-select v-model:value="journey.journey.value[0].countryCode" filterable :options="countryCodeList" />
+    <n-input v-model:value="journey.start.value.location" type="text" placeholder="Ville de départ" />
+    <n-select v-model:value="journey.start.value.countryCode" filterable :options="countryCodeList"
+        @update:value="handleSelectCountryCode" />
     <!-- </n-space> -->
     <!-- <n-space> -->
-    <n-input v-model:value="journey.journey.value[1].location" type="text" placeholder="Ville d'arrivée" />
-    <n-select v-model:value="journey.journey.value[1].countryCode" filterable :options="countryCodeList" />
+    <n-input v-model:value="journey.end.value.location" type="text" placeholder="Ville d'arrivée" />
+    <n-select v-model:value="journey.end.value.countryCode" filterable :options="countryCodeList"
+        @update:value="handleSelectCountryCode" />
     <!-- </n-space> -->
 
     <n-space>

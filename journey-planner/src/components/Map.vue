@@ -1,13 +1,20 @@
 <script>
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+import { useJourneyStore } from "../stores/journeyStore";
 import { MAP_API_KEY } from "../env.js";
 
 export default defineComponent({
     name: "Map",
-    data() {
+    setup() {
+        const journeyStore = useJourneyStore();
+        const journey = storeToRefs(journeyStore, "journey");
+
+        let mapDiv = null;
         const b8c = [45.641393, 5.868942];
         const home = [45.551363, 5.941973];
         const middle = [b8c[0] + (home[0] - b8c[0]) / 2, b8c[1] + (home[1] - b8c[1]) / 2];
@@ -20,21 +27,25 @@ export default defineComponent({
         const x = ref(0);
         const y = ref(0);
         const showPopover = ref(false);
+
+        const markers = ref([]);
+
         return {
+            journey,
             b8c,
             home,
             middle,
             b8cMarker,
             homeMarker,
+            markers,
             lineGeoJSON,
             x,
             y,
             showPopover,
             useLocation: middle,
-            mapDiv: null,
+            mapDiv,
         }
-    },
-    methods: {
+    }, methods: {
         setupLeafletMap: function () {
             this.mapDiv = L.map("mapContainer").setView(this.useLocation, 12);
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -45,8 +56,27 @@ export default defineComponent({
             this.b8cMarker = L.marker(this.b8c).addTo(this.mapDiv);
             this.homeMarker = L.marker(this.home).addTo(this.mapDiv);
             this.mapDiv.on('click', this.onMapClick);
-        },
-        onMapClick: function (e) {
+
+            watch(this.journey.journey, (newJourney) => {
+                console.log("Journey changed");
+                if (this.markers.length > 0) {
+                    this.markers.forEach((marker) => {
+                        this.mapDiv.removeLayer(marker);
+                    });
+                }
+                this.markers = [];
+                for (let step of newJourney) {
+                    if (step.coord.length > 0) {
+                        this.markers.push(L.marker(step.coord).addTo(this.mapDiv));
+                        // let marker = L.marker(step.coord).addTo(this.mapDiv);
+                        // this.markers.push(marker);
+                        // console.log(marker)
+                        // console.log(marker._latlng)
+                    }
+                }
+            }, { deep: true });
+
+        }, onMapClick: function (e) {
             // console.log(e)
             console.log(`You clicked the map at ${e.latlng}`);
             this.x = e.layerPoint.x;
@@ -55,21 +85,30 @@ export default defineComponent({
             setTimeout(() => {
                 this.showPopover = false;
             }, 3000);
-        },
-        switchDestination: function () {
+        }, switchDestination: function () {
             console.log("Switching destination");
             console.log(`before switch: ${this.useLocation}`)
-            if (this.useLocation === this.b8c) {
-                this.useLocation = this.home;
-            } else if (this.useLocation === this.home) {
-                this.useLocation = this.middle;
+            if(this.markers.length == 0){
+                if (this.useLocation === this.b8c) {
+                    this.useLocation = this.home;
+                } else if (this.useLocation === this.home) {
+                    this.useLocation = this.middle;
+                } else {
+                    this.useLocation = this.b8c;
+                }
             } else {
-                this.useLocation = this.b8c;
+                console.log(this.markers[0])
+                if (this.useLocation === this.b8c) {
+                    this.useLocation = this.markers[0]._latlng;
+                } else if (this.useLocation === this.markers[0]._latlng) {
+                    this.useLocation = this.markers[1]._latlng;
+                } else {
+                    this.useLocation = this.b8c;
+                }
             }
             console.log(`after switch: ${this.useLocation}`)
             this.mapDiv.setView(this.useLocation, 12);
-        },
-        findTravel: function () {
+        }, findTravel: function () {
             axios.post(`https://api.openrouteservice.org/v2/directions/driving-car/geojson`, {
                 "coordinates": [[this.b8c[1], this.b8c[0]], [this.home[1], this.home[0]]],
             }, {
@@ -84,10 +123,10 @@ export default defineComponent({
                 console.log(err);
             })
         },
-    },
-    mounted() {
+    }, mounted() {
         this.setupLeafletMap();
     },
+
 });
 </script>
 
