@@ -49,17 +49,31 @@ export const getJourney = () => {
     const journeyStore = useJourneyStore();
     return new Promise((resolve, reject) => {
         journeyStore.calcJourneyPersentage = 0;
-        getRoadJourney().then((journey) => {
+        getRoadJourney().then((journey) => {    // ! 0
             mapStore.geojson = journey;
-            journeyStore.calcJourneyPersentage = 50;
-            getStopPoints(journey).then((stopPoints) => {
+            journeyStore.calcJourneyPersentage = 20;
+            getStopPoints(journey).then((stopPoints) => {   // ? 1
                 console.log(stopPoints);
-                journeyStore.calcJourneyPersentage = 100;
-                resolve();
-            }).catch((err) => {
-                reject(err);
+                journeyStore.calcJourneyPersentage = 40;
+                // TODO : Do some data treatment
+                getStations(stopPoints).then((stations) => {    // // 2
+                    console.log(stations);
+                    journeyStore.calcJourneyPersentage = 60;
+                    // TODO : Do some data treatment
+                    getRoadJourney().then((journey) => {    // // 3
+                        console.log(journey);
+                        // TODO : Do some data treatment
+                        mapStore.geojson = journey;
+                        journeyStore.calcJourneyPersentage = 80;
+                        getTimeTravel(journey, stations).then((allTime) => {    // // 4
+                            console.log(allTime);
+                            journeyStore.calcJourneyPersentage = 100;
+                            // TODO : Do some data treatment
+                            resolve();
+                        });
+                    });
+                });
             });
-            resolve();
         }).catch((err) => {
             reject(err);
         });
@@ -104,6 +118,24 @@ function getRoadJourney(){
 function getStopPoints(journey) {
     const journeyStore = useJourneyStore();
     const car = journeyStore.car;
+    
+    return new Promise((resolve, reject) => {
+        // TODO
+        resolve();
+    });
+}
+
+function getStations(stopPoints) {
+    return new Promise((resolve, reject) => {
+        // TODO
+        resolve();
+    });
+}
+
+function getTimeTravel(journey, stations) {
+    const journeyStore = useJourneyStore();
+    const car = journeyStore.car;
+
     return new Promise((resolve, reject) => {
         // TODO
         resolve();
