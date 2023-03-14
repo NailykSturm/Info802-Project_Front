@@ -5,8 +5,7 @@ import { useMessage } from 'naive-ui';
 import axios from 'axios';
 
 import { useJourneyStore } from '../stores/journeyStore';
-import { useMapStore } from '../stores/mapStore';
-import { getJourney } from '../queries/findJourney'
+import { getJourney } from '../queries/findJourney';
 import { MAP_API_KEY } from '../env.js';
 
 export default defineComponent({
@@ -15,7 +14,6 @@ export default defineComponent({
         const msg = useMessage();
         const journeyStore = useJourneyStore();
         const journey = storeToRefs(journeyStore, 'journey');
-        const mapStore = useMapStore();
         let loadingMessage = null;
 
         const addStep = () => {
@@ -201,9 +199,12 @@ export default defineComponent({
                 @update:value="handleSelectCountryCode" />
         </div>
 
-        <n-space>
-            <n-button @click="search" secondary type="info">Rechercher</n-button>
-            <!-- <n-button @click="addStep" secondary type="warning">Ajouter un étape</n-button> -->
+        <n-space vertical style="width: 100%;">
+            <n-space>
+                <n-button @click="search" secondary type="info">Rechercher</n-button>
+                <!-- <n-button @click="addStep" secondary type="warning">Ajouter un étape</n-button> -->
+            </n-space>
+            <n-progress type="line" :percentage="journey.calcJourneyPersentage.value" :indicator-placement="'inside'" status="success" />
         </n-space>
     </n-space>
 </template>
@@ -212,4 +213,5 @@ export default defineComponent({
 .spc {
     margin-bottom: 1%;
 }
+
 </style>

@@ -46,9 +46,19 @@ export const getJourney = () => {
     * // 5. Display the time on the UI + the time of each stopPoints
     */
     const mapStore = useMapStore();
+    const journeyStore = useJourneyStore();
     return new Promise((resolve, reject) => {
+        journeyStore.calcJourneyPersentage = 0;
         getRoadJourney().then((journey) => {
             mapStore.geojson = journey;
+            journeyStore.calcJourneyPersentage = 50;
+            getStopPoints(journey).then((stopPoints) => {
+                console.log(stopPoints);
+                journeyStore.calcJourneyPersentage = 100;
+                resolve();
+            }).catch((err) => {
+                reject(err);
+            });
             resolve();
         }).catch((err) => {
             reject(err);
@@ -88,5 +98,14 @@ function getRoadJourney(){
                 reject(err.response.data.error.message);
             })
         }
+    });
+}
+
+function getStopPoints(journey) {
+    const journeyStore = useJourneyStore();
+    const car = journeyStore.car;
+    return new Promise((resolve, reject) => {
+        // TODO
+        resolve();
     });
 }
