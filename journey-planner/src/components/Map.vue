@@ -136,7 +136,7 @@ export default defineComponent({
 
 <style scoped>
 #mapContainer {
-    width: 60vw;
+    width: 70vw;
     height: 100vh;
 }
 </style>
