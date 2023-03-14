@@ -5,6 +5,7 @@ import { useMessage } from 'naive-ui';
 import axios from 'axios';
 
 import { useJourneyStore } from '../stores/journeyStore';
+import { useMapStore } from '../stores/mapStore';
 import { MAP_API_KEY } from '../env.js';
 
 export default defineComponent({
@@ -13,32 +14,43 @@ export default defineComponent({
         const msg = useMessage();
         const journeyStore = useJourneyStore();
         const journey = storeToRefs(journeyStore, 'journey');
+        const mapStore = useMapStore();
+
         const addStep = () => {
             msg.warning('Not implemented yet :('
                 + 'add Stap on journey');
         };
         const search = () => {
-            msg.warning('Not implemented yet :('
-                + 'search journey');
-
             var coordinates = [];
-            for (var i = 0; i < journey.journey.value.length; i++) {
-                coordinates.push([journey.journey.value[i].coord]);
-            }
+            journey.journey.value.forEach((step) => {
+                if (step.location != null && step.location != '') {
+                    if (step.coord.length > 0) {
+                        coordinates.push([step.coord[0], step.coord[1]]);
+                    } else {
+                        msg.warning(`Vous avez choisis ${step.location} comme ville pour l'étape ${step.step == 'start' ? 'de départ' : step.step == 'end' ? 'd\'arrivée' : 'n°' + step.step + '/' + journey.journey.value.length}. `
+                            + `Lorsque vous choisissez une ville, veillez à bien selectionner la ville que vous souhaitez dans la liste déroulante`);
+                    }
+                }
+            });
             console.log(coordinates);
-
-            // axios.post(`https://api.openrouteservice.org/v2/directions/driving-car/geojson`, {
-            //     "coordinates": [[this.b8c[1], this.b8c[0]], [this.home[1], this.home[0]]],
-            // }, {
-            //     headers: {
-            //         Authorization: MAP_API_KEY,
-            //     }
-            // }).then((data) => {
-            //     console.log(data);
-            //     var travelGeoJSON = data.data;
-            // }).catch((err) => {
-            //     console.log(err);
-            // })
+            if (coordinates.length < 2) {
+                msg.error("Vous ne pouvez pas plannifier un trajet avec moins de deux points de passage");
+            } else {
+                axios.post(`https://api.openrouteservice.org/v2/directions/driving-car/geojson`, {
+                    "coordinates": coordinates,
+                }, {
+                    headers: {
+                        Authorization: MAP_API_KEY,
+                    }
+                }).then((data) => {
+                    console.log(data);
+                    var travelGeoJSON = data.data;
+                    mapStore.geojson = travelGeoJSON;
+                }).catch((err) => {
+                    console.log(err);
+                    msg.error(err.response.data.error.message);
+                })
+            }
         };
 
         const startInput = ref(null);
@@ -179,27 +191,36 @@ export default defineComponent({
 </script>
 
 <template>
-    <!-- <n-space> -->
-    <!-- <n-space> -->
-    <n-dropdown :show="showCityListStart" :options="cityList" @select="handleSelectCity">
-        <n-input ref="startInput" v-model:value="journey.start.value.location" type="text" placeholder="Ville de départ"
-            @keyup="handleKeyUp($event, 'start')" @blur="handleBlur($event, 'start')" />
-    </n-dropdown>
-    <n-select v-model:value="journey.start.value.countryCode" filterable :options="countryCodeList"
-        @update:value="handleSelectCountryCode" />
-    <!-- </n-space> -->
-    <!-- <n-space> -->
-    <n-dropdown :show="showCityListEnd" :options="cityList" @select="handleSelectCity">
-        <n-input ref="endInput" v-model:value="journey.end.value.location" type="text" placeholder="Ville d'arrivée"
-            @keyup="handleKeyUp($event, 'end')" @blur="handleBlur($event, 'end')" />
-    </n-dropdown>
-    <n-select v-model:value="journey.end.value.countryCode" filterable :options="countryCodeList"
-        @update:value="handleSelectCountryCode" />
-    <!-- </n-space> -->
-
     <n-space>
-        <n-button @click="addStep" secondary type="warning">Ajouter un étape</n-button>
-        <n-button @click="search" secondary type="info">Rechercher</n-button>
+        <div class="spc">
+            Départ :
+            <n-dropdown :show="showCityListStart" :options="cityList" @select="handleSelectCity">
+                <n-input ref="startInput" v-model:value="journey.start.value.location" type="text"
+                    placeholder="Ville de départ" @keyup="handleKeyUp($event, 'start')"
+                    @blur="handleBlur($event, 'start')" />
+            </n-dropdown>
+            <n-select v-model:value="journey.start.value.countryCode" filterable :options="countryCodeList"
+                @update:value="handleSelectCountryCode" />
+        </div>
+        <div class="spc">
+            Arrivée :
+            <n-dropdown :show="showCityListEnd" :options="cityList" @select="handleSelectCity">
+                <n-input ref="endInput" v-model:value="journey.end.value.location" type="text" placeholder="Ville d'arrivée"
+                    @keyup="handleKeyUp($event, 'end')" @blur="handleBlur($event, 'end')" />
+            </n-dropdown>
+            <n-select v-model:value="journey.end.value.countryCode" filterable :options="countryCodeList"
+                @update:value="handleSelectCountryCode" />
+        </div>
+
+        <n-space>
+            <n-button @click="search" secondary type="info">Rechercher</n-button>
+            <!-- <n-button @click="addStep" secondary type="warning">Ajouter un étape</n-button> -->
+        </n-space>
     </n-space>
-    <!-- </n-space> -->
 </template>
+
+<style scoped>
+.spc {
+    margin-bottom: 1%;
+}
+</style>

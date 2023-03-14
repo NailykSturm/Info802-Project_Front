@@ -91,7 +91,7 @@ export default defineComponent({
                 if (journeyGeoJson != null) {
                     this.mapDiv.removeLayer(journeyGeoJson);
                 }
-                journeyGeoJson = L.geoJSON(newGeojson, { style: { "color": "#FF0000" } }).addTo(this.mapDiv);
+                journeyGeoJson = L.geoJSON(newGeojson, { style: { "color": "#0000FF" } }).addTo(this.mapDiv);
             })
 
             watch(this.journey.journey, (newJourney) => {
