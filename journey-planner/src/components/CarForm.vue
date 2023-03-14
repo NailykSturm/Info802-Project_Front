@@ -1,57 +1,56 @@
 <script>
 import { defineComponent, ref } from 'vue';
 import { Car } from '@vicons/ionicons5';
-import { useQuery, gpl } from '@apollo/client';
+import { request, GraphQLClient } from 'graphql-request';
 
 import { useJourneyStore } from '../stores/journeyStore';
+import { CHARGETRIP_API_HEADERS } from '../env';
+import { carQuery, getCarDetailsQuery } from '../queries/queries';
 
 export default defineComponent({
     setup() {
         const journeyStore = useJourneyStore();
+        
         const carList = ref([]);
+        const graphQLClient = new GraphQLClient('https://api.chargetrip.io/graphql', {
+            headers: CHARGETRIP_API_HEADERS,
+        });
+
+        function getCar() {
+            graphQLClient.request(carQuery, {
+                page: 1,
+                size: 10,
+                search: 'tesla',
+            }).then((data) => {
+                console.log(data);
+                carList.value = data.vehicleList;
+            }).catch((err) => {
+                console.log(err);
+            });
+        }
 
         const displayDrawer = ref(false);
         function handleCarButton() {
             displayDrawer.value = !displayDrawer.value;
         }
 
-        const getCar = qgl`
-            query vehicleList($page: Int, $size: Int, $search: String) {
-                vehicleList(
-                    page: $page, 
-                    size: $size, 
-                    search: $search, 
-                ) {
-                    id
-                    naming {
-                        make
-                        model
-                        chargetrip_version
-                    }
-                    media {
-                        image {
-                            thumbnail_url
-                        }
-                    }
-                }
-            }
-        `;
-        function handlerGetCar(){
-            console.log('poulet');
-            const { loading, error, data } = useQuery(getCar);
-
-            if (loading) return 'Loading...';
-            if (error) return `Error! ${error.message}`;
-
-            carList.value = data.vehicleList;
-            console.log(carList.value);
+        function handleSelectCar(car) {
+            graphQLClient.request(getCarDetailsQuery, {
+                vehicleId: car.id,
+            }).then((data) => {
+                console.log(data);
+                journeyStore.journey.car = data.vehicle;
+            }).catch((err) => {
+                console.log(err);
+            });
         }
 
         return {
             carList,
             displayDrawer,
             handleCarButton,
-            handlerGetCar,
+            getCar,
+            handleSelectCar,
         }
     },
     components: {
@@ -61,21 +60,23 @@ export default defineComponent({
 </script>
 
 <template>
-    <n-button secondary circle @click="handleCarButton"><template #icon>
+    <n-button secondary circle @click="handleCarButton" class="fixed"><template #icon>
             <Car />
         </template></n-button>
     <n-drawer v-model:show="displayDrawer" width="40%">
-        {{ handlerGetCar() }}
-        <n-drawer-content v-for="car in carList">
-            <n-card>
+        <n-drawer-content>
+            <n-card v-for="car in carList" @click="handleSelectCar(car)">
                 {{ car }}
             </n-card>
+            <template #footer>
+                <n-button @click="getCar">Chercher voiture</n-button>
+            </template>
         </n-drawer-content>
     </n-drawer>
 </template>
 
 <style scoped>
-.n-button {
+.fixed {
     position: fixed;
     top: 5%;
     right: 5%;
@@ -84,7 +85,7 @@ export default defineComponent({
     background-color: #111010;
 }
 
-.n-button:hover {
+.fixed:hover {
     color: #da4615;
     background-color: #111010;
 }
