@@ -159,7 +159,7 @@ export default defineComponent({
 </script>
 
 <template>
-    {{ cityList }}<br>
+    <!-- {{ cityList }}<br> -->
     <!-- journey : {{ journey.journey }}<br> -->
     start : {{ journey.start }}<br>
     end : {{ journey.end }}<br>
