@@ -6,7 +6,6 @@ import axios from 'axios';
 
 import { useJourneyStore } from '../stores/journeyStore';
 import { MAP_API_KEY } from '../env.js';
-import selection from 'naive-ui/es/_internal/selection';
 
 export default defineComponent({
     name: 'JourneyForm',
