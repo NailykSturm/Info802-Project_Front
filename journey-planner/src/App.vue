@@ -7,7 +7,8 @@ import CarForm from './components/CarForm.vue';
 
 <template>
   <main>
-    <n-message-provider>
+    <n-loading-bar-provider>
+      <n-message-provider>
         <CarForm />
         <div class="flex">
           <div class="map">
@@ -18,7 +19,8 @@ import CarForm from './components/CarForm.vue';
             <JourneyList />
           </n-space>
         </div>
-    </n-message-provider>
+      </n-message-provider>
+    </n-loading-bar-provider>
   </main>
 </template>
 
@@ -27,10 +29,12 @@ import CarForm from './components/CarForm.vue';
   display: flex;
   flex-direction: row;
 }
+
 .map {
   /* width: 70%; */
   padding-right: 1%;
 }
+
 .forms {
   width: 30%;
 }

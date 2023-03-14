@@ -6,6 +6,7 @@ import axios from 'axios';
 
 import { useJourneyStore } from '../stores/journeyStore';
 import { useMapStore } from '../stores/mapStore';
+import { getJourney } from '../queries/findJourney'
 import { MAP_API_KEY } from '../env.js';
 
 export default defineComponent({
@@ -15,42 +16,30 @@ export default defineComponent({
         const journeyStore = useJourneyStore();
         const journey = storeToRefs(journeyStore, 'journey');
         const mapStore = useMapStore();
+        let loadingMessage = null;
 
         const addStep = () => {
             msg.warning('Not implemented yet :('
                 + 'add Stap on journey');
         };
         const search = () => {
-            var coordinates = [];
-            journey.journey.value.forEach((step) => {
-                if (step.location != null && step.location != '') {
-                    if (step.coord.length > 0) {
-                        coordinates.push([step.coord[0], step.coord[1]]);
-                    } else {
-                        msg.warning(`Vous avez choisis ${step.location} comme ville pour l'étape ${step.step == 'start' ? 'de départ' : step.step == 'end' ? 'd\'arrivée' : 'n°' + step.step + '/' + journey.journey.value.length}. `
-                            + `Lorsque vous choisissez une ville, veillez à bien selectionner la ville que vous souhaitez dans la liste déroulante`);
-                    }
-                }
-            });
-            console.log(coordinates);
-            if (coordinates.length < 2) {
-                msg.error("Vous ne pouvez pas plannifier un trajet avec moins de deux points de passage");
-            } else {
-                axios.post(`https://api.openrouteservice.org/v2/directions/driving-car/geojson`, {
-                    "coordinates": coordinates,
-                }, {
-                    headers: {
-                        Authorization: MAP_API_KEY,
-                    }
-                }).then((data) => {
-                    console.log(data);
-                    var travelGeoJSON = data.data;
-                    mapStore.geojson = travelGeoJSON;
-                }).catch((err) => {
-                    console.log(err);
-                    msg.error(err.response.data.error.message);
-                })
+            if (!loadingMessage) {
+                loadingMessage = msg.loading('Chargement du trajet en cours...', { duration: 0 });
             }
+            getJourney().then((data) => {
+                if (loadingMessage) {
+                    loadingMessage.destroy();
+                    loadingMessage = null;
+                }
+                msg.success('Chargement terminé');
+            }).catch((err) => {
+                console.log(err);
+                if (loadingMessage) {
+                    loadingMessage.destroy();
+                    loadingMessage = null;
+                }
+                msg.error(err);
+            });
         };
 
         const startInput = ref(null);
