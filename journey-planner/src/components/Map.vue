@@ -6,6 +6,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { useJourneyStore } from "../stores/journeyStore";
+import { useMapStore } from "../stores/mapStore";
 import { MAP_API_KEY } from "../env.js";
 
 export default defineComponent({
@@ -13,8 +14,10 @@ export default defineComponent({
     setup() {
         const journeyStore = useJourneyStore();
         const journey = storeToRefs(journeyStore, "journey");
+        const mapStore = useMapStore();
 
-        let mapDiv = null;
+        const mapDivStore = storeToRefs(mapStore, "mapDiv");
+        const mapDiv = mapDivStore.mapDiv;
         const b8c = [45.641393, 5.868942];
         const home = [45.551363, 5.941973];
         const middle = [b8c[0] + (home[0] - b8c[0]) / 2, b8c[1] + (home[1] - b8c[1]) / 2];
