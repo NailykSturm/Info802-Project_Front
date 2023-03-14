@@ -20,6 +20,25 @@ export default defineComponent({
         const search = () => {
             msg.warning('Not implemented yet :('
                 + 'search journey');
+
+            var coordinates = [];
+            for (var i = 0; i < journey.journey.value.length; i++) {
+                coordinates.push([journey.journey.value[i].coord]);
+            }
+            console.log(coordinates);
+
+            // axios.post(`https://api.openrouteservice.org/v2/directions/driving-car/geojson`, {
+            //     "coordinates": [[this.b8c[1], this.b8c[0]], [this.home[1], this.home[0]]],
+            // }, {
+            //     headers: {
+            //         Authorization: MAP_API_KEY,
+            //     }
+            // }).then((data) => {
+            //     console.log(data);
+            //     var travelGeoJSON = data.data;
+            // }).catch((err) => {
+            //     console.log(err);
+            // })
         };
 
         const startInput = ref(null);
@@ -29,7 +48,7 @@ export default defineComponent({
             {
                 'key': 'default',
                 'label': 'Sélectionnez un pays',
-                'value': null
+                'value': ''
             }
         ]);
 
@@ -51,7 +70,7 @@ export default defineComponent({
             {
                 'key': 'default',
                 'label': 'Sélectionnez une ville',
-                'value': null,
+                'value': '',
                 'info': {
                     'city': 'none',
                     'country': 'none',
@@ -99,12 +118,12 @@ export default defineComponent({
                     countryCodeSearch = journey.end.value.countryCode;
                 }
 
-                axios.get(`https://api.openrouteservice.org/geocode/autocomplete?api_key=${MAP_API_KEY}&text=${citySearch}${countryCodeSearch != '' ? '&boundary.country=' + countryCodeSearch : ''}`)
+                axios.get(`https://api.openrouteservice.org/geocode/autocomplete?api_key=${MAP_API_KEY}&text=${citySearch}${countryCodeSearch != '' ? countryCodeSearch != null ? '&boundary.country=' + countryCodeSearch : '' : ''}`)
                     .then((data) => {
                         console.log(data);
                         cityList.value = [];
                         for (let feature of data.data.features) {
-                            if(!cityList.value.find((city) => { return city.key === feature.properties.label })){
+                            if (!cityList.value.find((city) => { return city.key === feature.properties.label })) {
                                 cityList.value.push({
                                     'key': feature.properties.label,
                                     'label': feature.properties.label,
@@ -120,6 +139,7 @@ export default defineComponent({
                         }
                     }).catch((err) => {
                         console.log(err);
+                        msg.error(err.response.data.geocoding.errors.toString());
                     });
 
                 if (step === 'start') {
