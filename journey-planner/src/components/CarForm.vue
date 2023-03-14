@@ -16,11 +16,12 @@ export default defineComponent({
             headers: CHARGETRIP_API_HEADERS,
         });
 
+        const searchCar = ref('');
         function getCar() {
             graphQLClient.request(carQuery, {
                 page: 1,
                 size: 10,
-                search: 'tesla',
+                search: searchCar.value,
             }).then((data) => {
                 console.log(data);
                 carList.value = data.vehicleList;
@@ -48,6 +49,7 @@ export default defineComponent({
         return {
             carList,
             displayDrawer,
+            searchCar,
             handleCarButton,
             getCar,
             handleSelectCar,
@@ -65,11 +67,19 @@ export default defineComponent({
         </template></n-button>
     <n-drawer v-model:show="displayDrawer" width="40%">
         <n-drawer-content>
-            <n-card v-for="car in carList" @click="handleSelectCar(car)">
-                {{ car }}
+            <n-card v-for="car in carList" @click="handleSelectCar(car)" :title="car.naming.model">
+                <template #header-extra>
+                    {{ car.naming.make }}
+                </template>
+                <template #cover>
+                    <n-image :src="car.media.image.thumbnail_url"/>
+                </template>
+                Charge utilisable de la batterie: {{ car.battery.usable_kwh }} kWh<br>
+                {{ car.routing.fast_charging_support ? "Supporte la charge rapide" : "Ne supporte pas la charge rapide" }}
             </n-card>
             <template #footer>
-                <n-button @click="getCar">Chercher voiture</n-button>
+                <n-input placeholder="Rechercher voiture" v-model:value="searchCar"/>
+                <n-button secondary type="success" @click="getCar">Chercher voiture</n-button>
             </template>
         </n-drawer-content>
     </n-drawer>
