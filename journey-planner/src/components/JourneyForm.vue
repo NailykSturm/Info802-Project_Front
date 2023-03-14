@@ -159,10 +159,6 @@ export default defineComponent({
 </script>
 
 <template>
-    <!-- {{ cityList }}<br> -->
-    <!-- journey : {{ journey.journey }}<br> -->
-    start : {{ journey.start }}<br>
-    end : {{ journey.end }}<br>
     <!-- <n-space> -->
     <!-- <n-space> -->
     <n-dropdown :show="showCityListStart" :options="cityList" @select="handleSelectCity">

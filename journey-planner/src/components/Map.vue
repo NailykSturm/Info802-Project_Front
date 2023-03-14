@@ -26,7 +26,7 @@ export default defineComponent({
         var lineGeoJSON = [{
             "type": "LineString",
             "coordinates": [[b8c[1], b8c[0]], [home[1], home[0]]],
-        },{
+        }, {
             "type": "LineString",
             "coordinates": [[-180, 0], [180, 0]],
         }, {
@@ -79,7 +79,7 @@ export default defineComponent({
 
             this.mapDiv.on('click', this.onMapClick);
             this.mapDiv.on('zoomstart', () => {
-                if(this.markers.length > 0){
+                if (this.markers.length > 0) {
                     this.markers.forEach((marker) => {
                         this.mapDiv.removeLayer(marker);
                     });
@@ -118,41 +118,22 @@ export default defineComponent({
             setTimeout(() => {
                 this.showPopover = false;
             }, 3000);
-        }, switchDestination: function () {
-            if(this.markers.length == 0){
-                if (this.useLocation === this.b8c) {
-                    this.useLocation = this.home;
-                } else if (this.useLocation === this.home) {
-                    this.useLocation = this.middle;
-                } else {
-                    this.useLocation = this.b8c;
-                }
-            } else {
-                console.log(this.markers[0])
-                if (this.useLocation === this.b8c) {
-                    this.useLocation = this.markers[0]._latlng;
-                } else if (this.useLocation === this.markers[0]._latlng) {
-                    this.useLocation = this.markers[1]._latlng;
-                } else {
-                    this.useLocation = this.b8c;
-                }
-            }
-            this.mapDiv.setView(this.useLocation, 10);
-        }, findTravel: function () {
-            axios.post(`https://api.openrouteservice.org/v2/directions/driving-car/geojson`, {
-                "coordinates": [[this.b8c[1], this.b8c[0]], [this.home[1], this.home[0]]],
-            }, {
-                headers: {
-                    Authorization: MAP_API_KEY,
-                }
-            }).then((data) => {
-                console.log(data);
-                var travelGeoJSON = data.data;
-                L.geoJSON(travelGeoJSON, { style: { "color": "#B5B512" } }).addTo(this.mapDiv);
-            }).catch((err) => {
-                console.log(err);
-            })
         },
+        // findTravel: function () {
+        //     axios.post(`https://api.openrouteservice.org/v2/directions/driving-car/geojson`, {
+        //         "coordinates": [[this.b8c[1], this.b8c[0]], [this.home[1], this.home[0]]],
+        //     }, {
+        //         headers: {
+        //             Authorization: MAP_API_KEY,
+        //         }
+        //     }).then((data) => {
+        //         console.log(data);
+        //         var travelGeoJSON = data.data;
+        //         L.geoJSON(travelGeoJSON, { style: { "color": "#B5B512" } }).addTo(this.mapDiv);
+        //     }).catch((err) => {
+        //         console.log(err);
+        //     })
+        // },
     }, mounted() {
         this.setupLeafletMap();
     },
@@ -161,11 +142,7 @@ export default defineComponent({
 </script>
 
 <template>
-    <button @click="switchDestination">Switch</button>
-    <button @click="findTravel">Find travel between b8c et home</button>
-    <div id="container">
-        <div id="mapContainer"></div>
-    </div>
+    <div id="mapContainer"></div>
     <n-popover :show="showPopover" :x="x" :y="y" trigger="manual">
         Vous avez cliqué sur la carte à [{{ x }},{{ y }}]<br>
         Que vouliez-vous faire ?
@@ -174,7 +151,7 @@ export default defineComponent({
 
 <style scoped>
 #mapContainer {
-    width: 80vw;
+    width: 60vw;
     height: 100vh;
 }
 </style>
