@@ -16,6 +16,7 @@ export const useJourneyStore = defineStore("journeyStore", () => {
             "coord": [],
         },
     ]);
+    const car = ref(null);
 
     const addStep = (stepNo, stepInfo) => {
         journey.value.splice(stepNo, 0, stepInfo);
@@ -63,6 +64,7 @@ export const useJourneyStore = defineStore("journeyStore", () => {
 
     return {
         journey,
+        car,
         start,
         end,
         addStep,
