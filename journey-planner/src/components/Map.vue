@@ -86,7 +86,7 @@ export default defineComponent({
                 this.markers = [];
                 for (let step of this.journey.journey.value) {
                     if (step.coord.length > 0) {
-                        this.markers.push(L.marker(step.coord).addTo(this.mapDiv));
+                        this.markers.push(L.marker([step.coord[1], step.coord[0]]).addTo(this.mapDiv));
                     }
                 }
             });
@@ -101,11 +101,7 @@ export default defineComponent({
                 this.markers = [];
                 for (let step of newJourney) {
                     if (step.coord.length > 0) {
-                        this.markers.push(L.marker(step.coord).addTo(this.mapDiv));
-                        // let marker = L.marker(step.coord).addTo(this.mapDiv);
-                        // this.markers.push(marker);
-                        // console.log(marker)
-                        // console.log(marker._latlng)
+                        this.markers.push(L.marker([step.coord[1], step.coord[0]]).addTo(this.mapDiv));
                     }
                 }
             }, { deep: true });
