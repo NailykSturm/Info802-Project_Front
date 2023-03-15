@@ -2,7 +2,77 @@ import axios from 'axios';
 
 import { useMapStore } from '../stores/mapStore';
 import { useJourneyStore } from '../stores/journeyStore';
-import { MAP_API_KEY } from '../env';
+import { MAP_API_KEY, SOAP_API_URL } from '../env';
+
+const soapRequestHeaders = {
+    'Accept-Encoding': 'gzip, deflate',
+    'Content-Type': ' text/xml; charset=utf-8',
+    'SOAPAction': 'ping',
+    'Content-Length': 'Infinity',
+    'Host': '127.0.0.1:8000',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Accept': 'text/xml',
+};
+
+export const pingSOAP = () => {
+    const xml = `
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:spy="spyne.usmb.journey.planner.soap">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <spy:ping/>
+    </soapenv:Body>
+ </soapenv:Envelope>
+    `;
+
+    // return new Promise((resolve, reject) => {
+    //     axios({
+    //         method: 'post',
+    //         url: SOAP_API_URL,
+    //         data: xml,
+    //         headers: soapRequestHeaders
+    //     })
+    //         .then((response) => {
+    //             resolve(response);
+    //         }).catch((err) => {
+    //             reject(err);
+    //         });
+    // });
+
+    // let xhr = new XMLHttpRequest();
+    // xhr.open("POST", SOAP_API_URL);
+    // xhr.withCredentials = false;
+    // xhr.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+    // xhr.setRequestHeader("SOAPAction", "{spyne.usmb.journey.planner.soap}ping");
+    // xhr.setRequestHeader("Accept", "text/xml");
+    // xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+    // xhr.setRequestHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
+    // xhr.setRequestHeader("Access-Control-Allow-Headers", "*");
+
+    // return new Promise((resolve, reject) => {
+    //     xhr.send(xml);
+    //     xhr.onload = function () {
+    //         if (xhr.status != 200) { // analyze HTTP status of the response
+    //             reject(`Error ${xhr.status}: ${xhr.statusText}`); // e.g. 404: Not Found
+    //         } else { // show the result
+    //             resolve(`Done, got ${xhr.response.length} bytes`); // response is the server response
+    //         }
+    //     };
+
+    //     xhr.onprogress = function (event) {
+    //         if (event.lengthComputable) {
+    //             alert(`Received ${event.loaded} of ${event.total} bytes`);
+    //         } else {
+    //             alert(`Received ${event.loaded} bytes`); // no Content-Length
+    //         }
+
+    //     };
+
+    //     xhr.onerror = function () {
+    //         reject("Request failed");
+    //     };
+    // });
+}
 
 export const getJourney = () => {
     /**
@@ -51,6 +121,7 @@ export const getJourney = () => {
         journeyStore.calcJourneyPersentage = 0;
         getRoadJourney().then((journey) => {    // ! 0
             mapStore.geojson = journey;
+            console.log(journey);
             journeyStore.calcJourneyPersentage = 20;
             getStopPoints(journey).then((stopPoints) => {   // ? 1
                 console.log(stopPoints);
@@ -80,7 +151,11 @@ export const getJourney = () => {
     });
 }
 
-function getRoadJourney(){
+/**
+ * Call the openrouteservice API to get a journey between all step defined by the user and the stopPoints
+ * @returns GeoJSON of the journey
+ */
+function getRoadJourney() {
     const journey = useJourneyStore();
     return new Promise((resolve, reject) => {
         var coordinates = [];
@@ -115,16 +190,26 @@ function getRoadJourney(){
     });
 }
 
+/**
+ * Call the SOAP API to get the stopPoints of the journey
+ * @param {GeoJSON} journey GeoJSON of the journey
+ * @returns stopPoints => Array of coordonates
+ */
 function getStopPoints(journey) {
     const journeyStore = useJourneyStore();
     const car = journeyStore.car;
-    
+
     return new Promise((resolve, reject) => {
         // TODO
         resolve();
     });
 }
 
+/**
+ * Call the chargetrip API to get the stations near the stopPoints
+ * @param {Array} stopPoints 
+ * @returns stations => Array of coordonates (each coordonates correspond to the station near the stopPoint)
+ */
 function getStations(stopPoints) {
     return new Promise((resolve, reject) => {
         // TODO
@@ -132,6 +217,12 @@ function getStations(stopPoints) {
     });
 }
 
+/**
+ * Call the SOAP API to get the time of the entire journey
+ * @param {GeoJSON} journey 
+ * @param {Array} stations 
+ * @returns Time + Detailed time of the journey
+ */
 function getTimeTravel(journey, stations) {
     const journeyStore = useJourneyStore();
     const car = journeyStore.car;
