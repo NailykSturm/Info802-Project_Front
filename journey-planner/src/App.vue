@@ -1,26 +1,39 @@
 <script setup>
+import { ref } from 'vue';
+import { lightTheme, darkTheme } from 'naive-ui';
+
 import Map from './components/Map.vue';
 import JourneyForm from './components/JourneyForm.vue';
 import JourneyList from './components/JourneyList.vue';
 import CarForm from './components/CarForm.vue';
+
+const theme = ref(darkTheme);
+const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+if (prefersDarkMode) {
+  theme.value = darkTheme
+} else {
+  theme.value = lightTheme
+}
 </script>
 
 <template>
   <main>
-    <n-loading-bar-provider>
-      <n-message-provider>
-        <CarForm />
-        <div class="flex">
-          <div class="map">
-            <Map />
+    <n-config-provider :theme="theme">
+      <n-loading-bar-provider>
+        <n-message-provider>
+          <CarForm />
+          <div class="flex">
+            <div class="map">
+              <Map />
+            </div>
+            <n-space vertical class="forms">
+              <JourneyForm />
+              <JourneyList />
+            </n-space>
           </div>
-          <n-space vertical class="forms">
-            <JourneyForm />
-            <JourneyList />
-          </n-space>
-        </div>
-      </n-message-provider>
-    </n-loading-bar-provider>
+        </n-message-provider>
+      </n-loading-bar-provider>
+    </n-config-provider>
   </main>
 </template>
 
