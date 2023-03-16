@@ -1,9 +1,10 @@
 import axios from 'axios';
-import { storeToRefs } from 'pinia';
+import { request, GraphQLClient } from 'graphql-request';
 
 import { useMapStore } from '../stores/mapStore';
 import { useJourneyStore } from '../stores/journeyStore';
-import { stationsQuery } from './queries' 
+import { CHARGETRIP_API_HEADERS } from '../env';
+import { stationsQuery } from './queries'
 import { MAP_API_KEY, SOAP_API_URL } from '../env';
 
 const soapRequestHeaders = {
@@ -96,16 +97,16 @@ export const getJourney = () => {
     * !       * car : JSON from chargepoint API
     * !   - OUTPUT :
     * !       * stopPoints : Array of coordonates
-    * ? 2. Call the chargetrip API to get the station near the stopPoints
-    * ?  - INPUT :
-    * ?      * stopPoints : Array of coordonates
-    * ?  - OUTPUT :
-    * ?       * stations : Array of station
-    * // 3. Call the openrouteservice API to get the travel between each stopPoints
-    * //   - INPUT :
-    * //       * stopPoints : Array of station
-    * //   - OUTPUT :
-    * //       * journey : Array of GeoJSON
+    * ! 2. Call the chargetrip API to get the station near the stopPoints
+    * !  - INPUT :
+    * !      * stopPoints : Array of coordonates
+    * !  - OUTPUT :
+    * !       * stations : Array of station
+    * ? 3. Call the openrouteservice API to get the travel between each stopPoints
+    * ?   - INPUT :
+    * ?       * stopPoints : Array of station
+    * ?   - OUTPUT :
+    * ?       * journey : Array of GeoJSON
     * // 4. Display the journey on the map
     * // 4. (async) Call the SOAP API to get the time of the entire journey
     * //   - INPUT :
@@ -119,42 +120,67 @@ export const getJourney = () => {
     */
     const mapStore = useMapStore();
     const journeyStore = useJourneyStore();
+    journeyStore.calcJourneyPersentage = 0;
     return new Promise((resolve, reject) => {
-        journeyStore.calcJourneyPersentage = 0;
-        getRoadJourney().then((journey) => {    // ! 0
-            mapStore.geojson = journey;
-            console.log(journey);
-            journeyStore.calcJourneyPersentage = 20;
-            getStopPoints(journey).then((stopPoints) => {   // ! 1
-                console.log(stopPoints);
-                journeyStore.calcJourneyPersentage = 40;
-                // TODO : Do some data treatment
-                if(stopPoints == []) {
-                    resolve("Pas d'arrêt pour recharger les batteries")
-                    journeyStore.calcJourneyPersentage = 100;
+        if (journeyStore.car == null) {
+            reject("Veuillez sélectionner une voiture !");
+        } else {
+            var coordinates = [];
+            journeyStore.journey.forEach((step) => {
+                if (step.location != null && step.location != '') {
+                    if (step.coord.length > 0) {
+                        coordinates.push([step.coord[0], step.coord[1]]);
+                    } else {
+                        reject(`Vous avez choisis ${step.location} comme ville pour l'étape ${step.step == 'start' ? 'de départ' : step.step == 'end' ? 'd\'arrivée' : 'n°' + step.step + '/' + journeyStore.journey.length}. `
+                            + `Lorsque vous choisissez une ville, veillez à bien selectionner la ville que vous souhaitez dans la liste déroulante`);
+                    }
                 }
-                getStations(stopPoints).then((stations) => {    // ? 2
-                    console.log(stations);
-                    journeyStore.calcJourneyPersentage = 60;
-                    // TODO : Do some data treatment
-                    getRoadJourney().then((journey) => {    // // 3
-                        console.log(journey);
-                        // TODO : Do some data treatment
-                        mapStore.geojson = journey;
-                        journeyStore.calcJourneyPersentage = 80;
-                        getTimeTravel(journey, stations).then((allTime) => {    // // 4
-                            console.log(allTime);
-                            journeyStore.calcJourneyPersentage = 100;
+            });
+            getRoadJourney(coordinates).then((journey) => {    // ! 0
+                mapStore.geojson = journey;
+                // console.log(journey);
+                journeyStore.calcJourneyPersentage = 20;
+                getStopPoints(journey).then((stopPoints) => {   // ! 1
+                    // console.log(stopPoints);
+                    journeyStore.calcJourneyPersentage = 40;
+                    if (stopPoints == []) {
+                        resolve("Pas d'arrêt pour recharger les batteries")
+                        journeyStore.calcJourneyPersentage = 100;
+                    }
+                    getStations(stopPoints).then((stations) => {    // ! 2
+                        console.log(stations);
+                        journeyStore.calcJourneyPersentage = 60;
+
+                        let coordinatesWithStations = [];
+                        for (let i = 0; i < journeyStore.journey.length; i++) {
+                            coordinatesWithStations.push([journeyStore.journey[i].coord[0], journeyStore.journey[i].coord[1]]);
+                            if(i < journeyStore.journey.length-1){
+                                for (let j = 0; j < stations[i].length-1; j++) {
+                                    console.log(stations[i][j]);
+                                    coordinatesWithStations.push([stations[i][j].coordinates[0], stations[i][j].coordinates[1]]);
+                                }
+                            }
+                        }
+                        console.log(coordinatesWithStations);
+                        getRoadJourney(coordinatesWithStations).then((journey) => {    // ! 3
+                            console.log(journey);
                             // TODO : Do some data treatment
-                            resolve();
+                            mapStore.geojson = journey;
+                            journeyStore.calcJourneyPersentage = 80;
+                            getTimeTravel(journey, stations).then((allTime) => {    // // 4
+                                console.log(allTime);
+                                journeyStore.calcJourneyPersentage = 100;
+                                // TODO : Do some data treatment
+                                resolve();
+                            });
                         });
                     });
                 });
+            }).catch((err) => {
+                console.error(err);
+                reject(err);
             });
-        }).catch((err) => {
-            console.error(err);
-            reject(err);
-        });
+        }
     });
 }
 
@@ -162,20 +188,8 @@ export const getJourney = () => {
  * Call the openrouteservice API to get a journey between all step defined by the user and the stopPoints
  * @returns GeoJSON of the journey
  */
-function getRoadJourney() {
-    const journey = useJourneyStore();
+function getRoadJourney(coordinates) {
     return new Promise((resolve, reject) => {
-        var coordinates = [];
-        journey.journey.forEach((step) => {
-            if (step.location != null && step.location != '') {
-                if (step.coord.length > 0) {
-                    coordinates.push([step.coord[0], step.coord[1]]);
-                } else {
-                    reject(`Vous avez choisis ${step.location} comme ville pour l'étape ${step.step == 'start' ? 'de départ' : step.step == 'end' ? 'd\'arrivée' : 'n°' + step.step + '/' + journey.journey.value.length}. `
-                        + `Lorsque vous choisissez une ville, veillez à bien selectionner la ville que vous souhaitez dans la liste déroulante`);
-                }
-            }
-        });
         if (coordinates.length < 2) {
             reject("Vous ne pouvez pas plannifier un trajet avec moins de deux points de passage");
         } else {
@@ -266,17 +280,19 @@ function getStopPoints(journey) {
         let stopPoints = [];
         let distanceFromLastStop = 0;
 
-        for(const segment of segments) {
-            for(const step of segment.steps) {
-                if(distanceFromLastStop + step.distance >= (car.range.chargetrip_range.worst * 100)) {
+        for (const i in segments) {
+            const segment = segments[i];
+            stopPoints.push([]);
+            for (const step of segment.steps) {
+                if (distanceFromLastStop + step.distance >= (car.range.chargetrip_range.worst * 100)) {
                     console.log(`Stop point added at ${coords[0][step.way_points[0]]} for a distance of ${distanceFromLastStop} m`);
-                    stopPoints.push(coords[0][step.way_points[0]]);
+                    stopPoints[i].push(coords[0][step.way_points[0]]);
                     distanceFromLastStop = 0;
                 }
                 distanceFromLastStop = distanceFromLastStop + step.distance;
             }
         }
-        console.log(`Distance = ${distanceFromLastStop}m | Autonomie de la voiture = ${car.range.chargetrip_range.worst*100}m`);
+        console.log(`Distance = ${distanceFromLastStop}m | Autonomie de la voiture = ${car.range.chargetrip_range.worst * 100}m`);
         resolve(stopPoints);
     });
 }
@@ -288,8 +304,30 @@ function getStopPoints(journey) {
  */
 function getStations(stopPoints) {
     return new Promise((resolve, reject) => {
-        // TODO
-        resolve();
+        let listStations = [];
+        const graphQLClient = new GraphQLClient('https://api.chargetrip.io/graphql', {
+            headers: CHARGETRIP_API_HEADERS,
+        });
+
+        for (let i = 0; i < stopPoints.length; i++) {
+            listStations.push([]);
+            for (let j = 0; j < stopPoints[i].length; j++) {
+                const stopPoint = stopPoints[i][j];
+                graphQLClient.request(stationsQuery, { query: { location: { type: "Point", coordinates: stopPoint }, distance: 3000 } })
+                    .then(data => {
+                        listStations[i].push({
+                            "coordinates": data.stationAround[0].location.coordinates,
+                            "speed": data.stationAround[0].speed,
+                        })
+                        if (i >= stopPoints.length - 1 && j >= stopPoints[i].length - 1) {
+                            resolve(listStations);
+                        }
+                    }).catch(err => {
+                        console.error(err);
+                        reject(err);
+                    })
+            }
+        }
     });
 }
 

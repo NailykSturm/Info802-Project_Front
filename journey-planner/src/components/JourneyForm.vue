@@ -85,7 +85,6 @@ export default defineComponent({
             });
         }
         function handleSelectCity(key, value) {
-            console.log('poulet');
             console.log(key);
             console.log(value);
             var step = value.info.step;

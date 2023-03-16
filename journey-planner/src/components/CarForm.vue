@@ -49,7 +49,11 @@ export default defineComponent({
                 console.log(err);
             });
         }
-
+        function handleKeyup(key){
+            if(key.code == 'Enter' || key.code == 'NumpadEnter'){
+                getCar()
+            }
+        }
         return {
             carList,
             displayDrawer,
@@ -57,6 +61,7 @@ export default defineComponent({
             handleCarButton,
             getCar,
             handleSelectCar,
+            handleKeyup,
         }
     },
     components: {
@@ -82,7 +87,7 @@ export default defineComponent({
                 {{ car.routing.fast_charging_support ? "Supporte la charge rapide" : "Ne supporte pas la charge rapide" }}
             </n-card>
             <template #footer>
-                <n-input placeholder="Rechercher voiture" v-model:value="searchCar"/>
+                <n-input placeholder="Rechercher voiture" v-model:value="searchCar" @keyup="handleKeyup($event)"/>
                 <n-button secondary type="success" @click="getCar">Chercher voiture</n-button>
             </template>
         </n-drawer-content>
