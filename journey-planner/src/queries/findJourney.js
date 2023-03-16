@@ -116,7 +116,7 @@ export const getJourney = () => {
     * !   - OUTPUT :
     * !       * allTime : Number
     * !       * detailedTime : Array of Number, corresponding to the time between each stopPoints + the time to charge the car
-    * // 5. Display the time on the UI + the time of each stopPoints
+    * ! 5. Display the time on the UI + the time of each stopPoints
     */
     const mapStore = useMapStore();
     const journeyStore = useJourneyStore();
@@ -148,7 +148,8 @@ export const getJourney = () => {
                         getTimeTravel(journey, []).then((allTime) => {    // ! 4
                             console.log(allTime);
                             journeyStore.calcJourneyPersentage = 100;
-                            resolve(allTime);
+                            journeyStore.timeTravel = allTime;
+                            resolve();
                         });
                     }
                     getStations(stopPoints).then((stations) => {    // ! 2
@@ -163,16 +164,17 @@ export const getJourney = () => {
                                 }
                             }
                         }
-                        console.log(coordinatesWithStations);
+
                         getRoadJourney(coordinatesWithStations).then((journey) => {    // ! 3
-                            console.log(journey);
+                            // console.log(journey);
                             mapStore.geojson = journey;
                             journeyStore.calcJourneyPersentage = 80;
 
                             getTimeTravel(journey, stations).then((allTime) => {    // ! 4
-                                console.log(allTime);
+                                // console.log(allTime);
                                 journeyStore.calcJourneyPersentage = 100;
-                                resolve(allTime);
+                                journeyStore.timeTravel = allTime;
+                                resolve();
                             });
                         });
                     });
@@ -201,7 +203,6 @@ function getRoadJourney(coordinates) {
                     Authorization: MAP_API_KEY,
                 }
             }).then((data) => {
-                console.log(data);
                 var travelGeoJSON = data.data;
                 resolve(travelGeoJSON);
             }).catch((err) => {

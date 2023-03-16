@@ -6,6 +6,7 @@ import Map from './components/Map.vue';
 import JourneyForm from './components/JourneyForm.vue';
 import JourneyList from './components/JourneyList.vue';
 import CarForm from './components/CarForm.vue';
+import JourneySummary from './components/JourneySummary.vue';
 
 const theme = ref(darkTheme);
 const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -31,6 +32,7 @@ if (prefersDarkMode) {
               <JourneyList />
             </n-space>
           </div>
+          <JourneySummary />
         </n-message-provider>
       </n-loading-bar-provider>
     </n-config-provider>

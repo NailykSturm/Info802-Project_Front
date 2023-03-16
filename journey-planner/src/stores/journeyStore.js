@@ -18,14 +18,15 @@ export const useJourneyStore = defineStore("journeyStore", () => {
     ]);
     const car = ref(null);
     const calcJourneyPersentage = ref(0);
+    const timeTravel = ref({});
 
     const addStep = (stepNo, stepInfo) => {
         journey.value.splice(stepNo, 0, stepInfo);
-    }
+    };
 
     const removeStep = (stepNo) => {
         journey.value.splice(stepNo, 1);
-    }
+    };
 
     const clearJourney = () => {
         journey.value = [
@@ -42,7 +43,7 @@ export const useJourneyStore = defineStore("journeyStore", () => {
                 "coord": [],
             },
         ];
-    }
+    };
 
     const start = computed(() => {
         let res = null;
@@ -67,10 +68,11 @@ export const useJourneyStore = defineStore("journeyStore", () => {
         journey,
         car,
         calcJourneyPersentage,
+        timeTravel,
         start,
         end,
         addStep,
         removeStep,
         clearJourney,
-    }
+    };
 })

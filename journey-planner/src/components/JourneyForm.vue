@@ -203,7 +203,6 @@ export default defineComponent({
                 <n-button @click="search" secondary type="info">Rechercher</n-button>
                 <!-- <n-button @click="addStep" secondary type="warning">Ajouter un étape</n-button> -->
             </n-space>
-            <n-progress type="line" :percentage="journey.calcJourneyPersentage.value" :indicator-placement="'inside'" status="success" />
         </n-space>
     </n-space>
 </template>
