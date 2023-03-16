@@ -29,7 +29,7 @@ export default defineComponent({
                     loadingMessage.destroy();
                     loadingMessage = null;
                 }
-                msg.success('Chargement terminé');
+                msg.success(data);
             }).catch((err) => {
                 console.log(err);
                 if (loadingMessage) {
