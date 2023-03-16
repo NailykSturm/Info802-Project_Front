@@ -40,7 +40,7 @@ export default defineComponent({
                 vehicleId: car.id,
             }).then((data) => {
                 console.log(data);
-                journeyStore.journey.car = data.vehicle;
+                journeyStore.car = data.vehicle;
             }).catch((err) => {
                 console.log(err);
             });
