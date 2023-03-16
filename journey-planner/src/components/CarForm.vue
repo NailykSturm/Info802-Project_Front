@@ -41,6 +41,7 @@ export default defineComponent({
             }).then((data) => {
                 console.log(data);
                 journeyStore.car = data.vehicle;
+                displayDrawer.value = false;
             }).catch((err) => {
                 console.log(err);
             });

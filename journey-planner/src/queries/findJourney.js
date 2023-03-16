@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia';
 
 import { useMapStore } from '../stores/mapStore';
 import { useJourneyStore } from '../stores/journeyStore';
+import { stationsQuery } from './queries' 
 import { MAP_API_KEY, SOAP_API_URL } from '../env';
 
 const soapRequestHeaders = {
@@ -89,17 +90,17 @@ export const getJourney = () => {
     * !       * coordonates : Array of coordonates (start -> end possibly with some other point between)
     * !   - OUTPUT :
     * !       * journey : GeoJSON
-    * ? 1. Call the SOAP API to get coordonates of all point of stop
-    * ?   - INPUT : 
-    * ?       * journey : GeoJSON from openrouteservice API
-    * ?       * car : JSON from chargepoint API
-    * ?   - OUTPUT :
-    * ?       * stopPoints : Array of coordonates
-    * // 2. Call the chargetrip API to get the station near the stopPoints
-    * //  - INPUT :
-    * //      * stopPoints : Array of coordonates
-    * //  - OUTPUT :
-    * //       * stations : Array of station
+    * ! 1. Call the SOAP API to get coordonates of all point of stop
+    * !   - INPUT : 
+    * !       * journey : GeoJSON from openrouteservice API
+    * !       * car : JSON from chargepoint API
+    * !   - OUTPUT :
+    * !       * stopPoints : Array of coordonates
+    * ? 2. Call the chargetrip API to get the station near the stopPoints
+    * ?  - INPUT :
+    * ?      * stopPoints : Array of coordonates
+    * ?  - OUTPUT :
+    * ?       * stations : Array of station
     * // 3. Call the openrouteservice API to get the travel between each stopPoints
     * //   - INPUT :
     * //       * stopPoints : Array of station
@@ -124,11 +125,15 @@ export const getJourney = () => {
             mapStore.geojson = journey;
             console.log(journey);
             journeyStore.calcJourneyPersentage = 20;
-            getStopPoints(journey).then((stopPoints) => {   // ? 1
+            getStopPoints(journey).then((stopPoints) => {   // ! 1
                 console.log(stopPoints);
                 journeyStore.calcJourneyPersentage = 40;
                 // TODO : Do some data treatment
-                getStations(stopPoints).then((stations) => {    // // 2
+                if(stopPoints == []) {
+                    resolve("Pas d'arrêt pour recharger les batteries")
+                    journeyStore.calcJourneyPersentage = 100;
+                }
+                getStations(stopPoints).then((stations) => {    // ? 2
                     console.log(stations);
                     journeyStore.calcJourneyPersentage = 60;
                     // TODO : Do some data treatment
@@ -261,15 +266,17 @@ function getStopPoints(journey) {
         let stopPoints = [];
         let distanceFromLastStop = 0;
 
-        for(const segment in segments) {
-            for(const step in segment) {
-                if(distanceFromLastStop + step.distance >= (car.range.worst.combined * 100)) {
-                    console.log(`Stop point added at ${coords[step.way_points[0]]} for a distance of ${distanceFromLastStop} m`);
-                    stopPoints.push(coords[step.way_points[0]]);
+        for(const segment of segments) {
+            for(const step of segment.steps) {
+                if(distanceFromLastStop + step.distance >= (car.range.chargetrip_range.worst * 100)) {
+                    console.log(`Stop point added at ${coords[0][step.way_points[0]]} for a distance of ${distanceFromLastStop} m`);
+                    stopPoints.push(coords[0][step.way_points[0]]);
                     distanceFromLastStop = 0;
                 }
+                distanceFromLastStop = distanceFromLastStop + step.distance;
             }
         }
+        console.log(`Distance = ${distanceFromLastStop}m | Autonomie de la voiture = ${car.range.chargetrip_range.worst*100}m`);
         resolve(stopPoints);
     });
 }

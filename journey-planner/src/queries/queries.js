@@ -75,3 +75,21 @@ query vehicle($vehicleId: ID!) {
   }
 }
 `;
+
+export const stationsQuery = qql`
+query stationAround($query: StationAroundQuery!){
+stationAround(
+  query:$query,
+  size: 1
+  page: 0
+  ) {
+    id
+    location {
+      type
+      coordinates
+    }
+    status
+    speed
+  }
+}
+`;
