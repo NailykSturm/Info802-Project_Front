@@ -102,20 +102,20 @@ export const getJourney = () => {
     * !      * stopPoints : Array of coordonates
     * !  - OUTPUT :
     * !       * stations : Array of station
-    * ? 3. Call the openrouteservice API to get the travel between each stopPoints
-    * ?   - INPUT :
-    * ?       * stopPoints : Array of station
-    * ?   - OUTPUT :
-    * ?       * journey : Array of GeoJSON
-    * // 4. Display the journey on the map
-    * // 4. (async) Call the SOAP API to get the time of the entire journey
-    * //   - INPUT :
-    * //       * journey : GeoJSON
-    * //       * car : JSON from chargepoint API
-    * //       * stations : Array of station
-    * //   - OUTPUT :
-    * //       * allTime : Number
-    * //       * detailedTime : Array of Number, corresponding to the time between each stopPoints + the time to charge the car
+    * ! 3. Call the openrouteservice API to get the travel between each stopPoints
+    * !   - INPUT :
+    * !       * stopPoints : Array of station
+    * !   - OUTPUT :
+    * !       * journey : Array of GeoJSON
+    * ! 4. Display the journey on the map
+    * ! 4. (async) Call the SOAP API to get the time of the entire journey
+    * !   - INPUT :
+    * !       * journey : GeoJSON
+    * !       * car : JSON from chargepoint API
+    * !       * stations : Array of station
+    * !   - OUTPUT :
+    * !       * allTime : Number
+    * !       * detailedTime : Array of Number, corresponding to the time between each stopPoints + the time to charge the car
     * // 5. Display the time on the UI + the time of each stopPoints
     */
     const mapStore = useMapStore();
@@ -148,15 +148,13 @@ export const getJourney = () => {
                         journeyStore.calcJourneyPersentage = 100;
                     }
                     getStations(stopPoints).then((stations) => {    // ! 2
-                        console.log(stations);
                         journeyStore.calcJourneyPersentage = 60;
 
                         let coordinatesWithStations = [];
                         for (let i = 0; i < journeyStore.journey.length; i++) {
                             coordinatesWithStations.push([journeyStore.journey[i].coord[0], journeyStore.journey[i].coord[1]]);
-                            if(i < journeyStore.journey.length-1){
-                                for (let j = 0; j < stations[i].length-1; j++) {
-                                    console.log(stations[i][j]);
+                            if (i < journeyStore.journey.length - 1) {
+                                for (let j = 0; j < stations[i].length - 1; j++) {
                                     coordinatesWithStations.push([stations[i][j].coordinates[0], stations[i][j].coordinates[1]]);
                                 }
                             }
@@ -164,10 +162,10 @@ export const getJourney = () => {
                         console.log(coordinatesWithStations);
                         getRoadJourney(coordinatesWithStations).then((journey) => {    // ! 3
                             console.log(journey);
-                            // TODO : Do some data treatment
                             mapStore.geojson = journey;
                             journeyStore.calcJourneyPersentage = 80;
-                            getTimeTravel(journey, stations).then((allTime) => {    // // 4
+
+                            getTimeTravel(journey, stations).then((allTime) => {    // ! 4
                                 console.log(allTime);
                                 journeyStore.calcJourneyPersentage = 100;
                                 // TODO : Do some data treatment
@@ -222,13 +220,13 @@ function getStopPoints(journey) {
     let coords = [];
     let segments = [];
     journey.features.forEach(feature => {
-        let part = {
-            "distance": 0,
-            "duration": 0,
-            "steps": [],
-            "way_points": [0, 0],
-        };
         feature.properties.segments.forEach(segment => {
+            let part = {
+                "distance": 0,
+                "duration": 0,
+                "steps": [],
+                "way_points": [0, 0],
+            };
             part.distance = segment.distance;
             part.duration = segment.duration;
             segment.steps.forEach(step => {
@@ -240,9 +238,9 @@ function getStopPoints(journey) {
             })
             part.way_points[0] = segment.steps[0].way_points[0];
             part.way_points[1] = segment.steps[segment.steps.length - 1].way_points[1];
+            segments.push(part);
         })
         coords.push(feature.geometry.coordinates);
-        segments.push(part);
     });
     const geojson = {
         "coordinates": coords,
@@ -285,14 +283,13 @@ function getStopPoints(journey) {
             stopPoints.push([]);
             for (const step of segment.steps) {
                 if (distanceFromLastStop + step.distance >= (car.range.chargetrip_range.worst * 100)) {
-                    console.log(`Stop point added at ${coords[0][step.way_points[0]]} for a distance of ${distanceFromLastStop} m`);
+                    // console.log(`Stop point added at ${coords[0][step.way_points[0]]} for a distance of ${distanceFromLastStop} m`);
                     stopPoints[i].push(coords[0][step.way_points[0]]);
                     distanceFromLastStop = 0;
                 }
                 distanceFromLastStop = distanceFromLastStop + step.distance;
             }
         }
-        console.log(`Distance = ${distanceFromLastStop}m | Autonomie de la voiture = ${car.range.chargetrip_range.worst * 100}m`);
         resolve(stopPoints);
     });
 }
@@ -339,10 +336,107 @@ function getStations(stopPoints) {
  */
 function getTimeTravel(journey, stations) {
     const journeyStore = useJourneyStore();
-    const car = journeyStore.car;
 
+    let coords = [];
+    let segments = [];
+    journey.features.forEach(feature => {
+        feature.properties.segments.forEach(segment => {
+            let part = {
+                "distance": 0,
+                "duration": 0,
+                "steps": [],
+                "way_points": [0, 0],
+            };
+            part.distance = segment.distance;
+            part.duration = segment.duration;
+            segment.steps.forEach(step => {
+                part.steps.push({
+                    "distance": step.distance,
+                    "duration": step.duration,
+                    "way_points": step.way_points,
+                })
+            })
+            part.way_points[0] = segment.steps[0].way_points[0];
+            part.way_points[1] = segment.steps[segment.steps.length - 1].way_points[1];
+            segments.push(part);
+        })
+        coords.push(feature.geometry.coordinates);
+    });
+    const geojson = {
+        "coordinates": coords,
+        "segments": segments,
+    };
+
+    const userCar = journeyStore.car;
+    let car = {
+        "battery": userCar.battery.usable_kwh,
+        "routing": {
+            "fast_charging_support": userCar.routing.fast_charging_support,
+        },
+        "range": {
+            "best": {
+                "city": userCar.range.best.city,
+                "highway": userCar.range.best.highway,
+                "combined": userCar.range.best.combined,
+            },
+            "worst": {
+                "city": userCar.range.worst.city,
+                "highway": userCar.range.worst.highway,
+                "combined": userCar.range.worst.combined,
+            },
+            "chargetrip_range": {
+                "best": userCar.range.chargetrip_range.best,
+                "worst": userCar.range.chargetrip_range.worst,
+            },
+        }
+    }
+
+    // TODO : Replace the front data treatment by SOAP API call
     return new Promise((resolve, reject) => {
-        // TODO
-        resolve();
+        const timeSlow = 7 * 60;
+        const timeFast = 60;
+        const timeTurbo = 30;
+        let finalTime = {
+            "totalTime": 0,
+            "detailedTime": [],
+        }
+
+        segments.forEach((segment) => {
+            console.log(segment);
+            let rechargeTime = 0;
+            stations.forEach(stationStep => {
+                const coord = coords[0][segment.way_points[1]];
+                console.log(coord);
+                let nearStation = null;
+                let nearStationDistance = null;
+                console.warn(stationStep);
+                stationStep.forEach(station => {
+                    let dist = Math.sqrt(Math.pow((coord[0] - station.coordinates[0]), 2) + Math.pow((coord[1] - station.coordinates[1]), 2));
+                    if(nearStationDistance == null || nearStationDistance > dist) {
+                        nearStationDistance = dist;
+                        nearStation = station;
+                    }
+                });
+
+                if(car.routing.fast_charging_support) {
+                    if(nearStation.speed == 'turbo'){
+                        rechargeTime = timeTurbo;
+                    } else if (nearStation.speed == 'fast') {
+                        rechargeTime = timeFast;
+                    } else if (nearStation.speed == 'slow') {
+                        rechargeTime = timeSlow;
+                    }
+                } else {
+                    rechargeTime = timeSlow;
+                }
+
+                finalTime.detailedTime.push({
+                    "travel": segment.duration,
+                    "recharge": rechargeTime,
+                });
+                finalTime.totalTime += segment.duration + rechargeTime;
+            });
+        });
+        resolve(finalTime);
     });
 }
