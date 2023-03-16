@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { storeToRefs } from 'pinia';
 
 import { useMapStore } from '../stores/mapStore';
 import { useJourneyStore } from '../stores/journeyStore';
@@ -146,6 +147,7 @@ export const getJourney = () => {
                 });
             });
         }).catch((err) => {
+            console.error(err);
             reject(err);
         });
     });
@@ -197,11 +199,78 @@ function getRoadJourney() {
  */
 function getStopPoints(journey) {
     const journeyStore = useJourneyStore();
-    const car = journeyStore.car;
 
+    let coords = [];
+    let segments = [];
+    journey.features.forEach(feature => {
+        let part = {
+            "distance": 0,
+            "duration": 0,
+            "steps": [],
+            "way_points": [0, 0],
+        };
+        feature.properties.segments.forEach(segment => {
+            part.distance = segment.distance;
+            part.duration = segment.duration;
+            segment.steps.forEach(step => {
+                part.steps.push({
+                    "distance": step.distance,
+                    "duration": step.duration,
+                    "way_points": step.way_points,
+                })
+            })
+            part.way_points[0] = segment.steps[0].way_points[0];
+            part.way_points[1] = segment.steps[segment.steps.length - 1].way_points[1];
+        })
+        coords.push(feature.geometry.coordinates);
+        segments.push(part);
+    });
+    const geojson = {
+        "coordinates": coords,
+        "segments": segments,
+    };
+
+    const userCar = journeyStore.car;
+    let car = {
+        "battery": userCar.battery.usable_kwh,
+        "routing": {
+            "fast_charging_support": userCar.routing.fast_charging_support,
+        },
+        "range": {
+            "best": {
+                "city": userCar.range.best.city,
+                "highway": userCar.range.best.highway,
+                "combined": userCar.range.best.combined,
+            },
+            "worst": {
+                "city": userCar.range.worst.city,
+                "highway": userCar.range.worst.highway,
+                "combined": userCar.range.worst.combined,
+            },
+            "chargetrip_range": {
+                "best": userCar.range.chargetrip_range.best,
+                "worst": userCar.range.chargetrip_range.worst,
+            },
+        }
+    }
+
+    // TODO : Replace the front data treatment by SOAP API call
     return new Promise((resolve, reject) => {
-        // TODO
-        resolve();
+        const coords = geojson.coordinates;
+        const segments = geojson.segments;
+        let stopPoints = [];
+        let distanceFromLastStop = 0;
+
+        for(const segment in segments) {
+            for(const step in segment) {
+                if(distanceFromLastStop + step.distance >= (car.range.worst.combined * 100)) {
+                    console.log(`Stop point added at ${coords[step.way_points[0]]} for a distance of ${distanceFromLastStop} m`);
+                    stopPoints.push(coords[step.way_points[0]]);
+                    distanceFromLastStop = 0;
+                }
+            }
+        }
+        resolve(stopPoints);
     });
 }
 
