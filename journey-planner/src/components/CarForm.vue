@@ -1,6 +1,7 @@
 <script>
 import { defineComponent, ref } from 'vue';
 import { Car } from '@vicons/ionicons5';
+import { useMessage } from 'naive-ui';
 import { request, GraphQLClient } from 'graphql-request';
 
 import { useJourneyStore } from '../stores/journeyStore';
@@ -10,6 +11,7 @@ import { carQuery, getCarDetailsQuery } from '../queries/queries';
 export default defineComponent({
     setup() {
         const journeyStore = useJourneyStore();
+        const msg = useMessage();
         
         const carList = ref([]);
         const graphQLClient = new GraphQLClient('https://api.chargetrip.io/graphql', {
@@ -42,6 +44,7 @@ export default defineComponent({
                 console.log(data);
                 journeyStore.car = data.vehicle;
                 displayDrawer.value = false;
+                msg.info(`Vous avez sélectionner la voiture de chez ${journeyStore.car.naming.make} modèle ${journeyStore.car.naming.model}`);
             }).catch((err) => {
                 console.log(err);
             });
