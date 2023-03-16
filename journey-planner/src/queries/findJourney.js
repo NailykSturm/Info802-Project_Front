@@ -144,8 +144,12 @@ export const getJourney = () => {
                     // console.log(stopPoints);
                     journeyStore.calcJourneyPersentage = 40;
                     if (stopPoints == []) {
-                        resolve("Pas d'arrêt pour recharger les batteries")
-                        journeyStore.calcJourneyPersentage = 100;
+                        journeyStore.calcJourneyPersentage = 70;
+                        getTimeTravel(journey, []).then((allTime) => {    // ! 4
+                            console.log(allTime);
+                            journeyStore.calcJourneyPersentage = 100;
+                            resolve(allTime);
+                        });
                     }
                     getStations(stopPoints).then((stations) => {    // ! 2
                         journeyStore.calcJourneyPersentage = 60;
@@ -168,8 +172,7 @@ export const getJourney = () => {
                             getTimeTravel(journey, stations).then((allTime) => {    // ! 4
                                 console.log(allTime);
                                 journeyStore.calcJourneyPersentage = 100;
-                                // TODO : Do some data treatment
-                                resolve();
+                                resolve(allTime);
                             });
                         });
                     });
@@ -402,40 +405,46 @@ function getTimeTravel(journey, stations) {
         }
 
         segments.forEach((segment) => {
-            console.log(segment);
-            let rechargeTime = 0;
-            stations.forEach(stationStep => {
-                const coord = coords[0][segment.way_points[1]];
-                console.log(coord);
-                let nearStation = null;
-                let nearStationDistance = null;
-                console.warn(stationStep);
-                stationStep.forEach(station => {
-                    let dist = Math.sqrt(Math.pow((coord[0] - station.coordinates[0]), 2) + Math.pow((coord[1] - station.coordinates[1]), 2));
-                    if(nearStationDistance == null || nearStationDistance > dist) {
-                        nearStationDistance = dist;
-                        nearStation = station;
-                    }
-                });
+            if (stations.length > 0) {
+                stations.forEach(stationStep => {
+                    let rechargeTime = 0;
+                    const coord = coords[0][segment.way_points[1]];
+                    let nearStation = null;
+                    let nearStationDistance = null;
 
-                if(car.routing.fast_charging_support) {
-                    if(nearStation.speed == 'turbo'){
-                        rechargeTime = timeTurbo;
-                    } else if (nearStation.speed == 'fast') {
-                        rechargeTime = timeFast;
-                    } else if (nearStation.speed == 'slow') {
+                    stationStep.forEach(station => {
+                        let dist = Math.sqrt(Math.pow((coord[0] - station.coordinates[0]), 2) + Math.pow((coord[1] - station.coordinates[1]), 2));
+                        if (nearStationDistance == null || nearStationDistance > dist) {
+                            nearStationDistance = dist;
+                            nearStation = station;
+                        }
+                    });
+
+                    if (car.routing.fast_charging_support) {
+                        if (nearStation.speed == 'turbo') {
+                            rechargeTime = timeTurbo;
+                        } else if (nearStation.speed == 'fast') {
+                            rechargeTime = timeFast;
+                        } else if (nearStation.speed == 'slow') {
+                            rechargeTime = timeSlow;
+                        }
+                    } else {
                         rechargeTime = timeSlow;
                     }
-                } else {
-                    rechargeTime = timeSlow;
-                }
 
+                    finalTime.detailedTime.push({
+                        "travel": segment.duration,
+                        "recharge": rechargeTime,
+                    });
+                    finalTime.totalTime += segment.duration + rechargeTime;
+                });
+            } else {
                 finalTime.detailedTime.push({
                     "travel": segment.duration,
-                    "recharge": rechargeTime,
+                    "recharge": 0,
                 });
-                finalTime.totalTime += segment.duration + rechargeTime;
-            });
+                finalTime.totalTime += segment.duration;
+            }
         });
         resolve(finalTime);
     });
